@@ -1,1 +1,11 @@
-curl_cffi
+# 核心依赖
+curl_cffi>=0.5.7
+websocket-client>=1.5.0
+
+# HTTP 服务
+fastapi>=0.100.0
+uvicorn>=0.23.0
+pydantic>=2.0.0
+
+# 环境变量加载
+python-dotenv>=1.0.0

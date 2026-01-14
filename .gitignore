@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.env
+token_pool_config.json
+venv/
+.vscode/
+perplexity.log
+responses/
+.idea/
+*.egg-info/
+dist/
+build/

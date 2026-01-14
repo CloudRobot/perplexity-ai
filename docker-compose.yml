@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  perplexity-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: perplexity-proxy:latest
+    container_name: perplexity-proxy
+    restart: unless-stopped
+    
+    ports:
+      - "${PPLX_PORT:-8000}:8000"
+    
+    env_file:
+      - .env
+    
+    volumes:
+      # 挂载 Token 池配置文件
+      - ./token_pool_config.json:/app/token_pool_config.json:ro
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

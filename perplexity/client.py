@@ -254,6 +254,13 @@ class Client:
 
         # Send the query request and handle the response
         resp = self.session.post(ENDPOINT_SSE_ASK, json=json_data, stream=True)
+        
+        if resp.status_code == 401:
+            raise Exception("Perplexity Auth Error: Cookies Expired (401)")
+            
+        if not resp.ok:
+            raise Exception(f"HTTP Error {resp.status_code}: {resp.text}")
+
         chunks = []
 
         def stream_response(resp):

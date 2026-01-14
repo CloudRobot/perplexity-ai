@@ -1,0 +1,9 @@
+{
+    "tokens": [
+        {
+            "id": "account-1",
+            "csrf_token": "YOUR_CSRF_TOKEN_HERE",
+            "session_token": "YOUR_SESSION_TOKEN_HERE"
+        }
+    ]
+}
