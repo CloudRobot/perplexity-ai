@@ -19,7 +19,7 @@ from .client_pool import ClientPool  # noqa: E402
 
 # ==================== 配置 ====================
 CONFIG = {
-    "host": os.getenv("PPLX_HOST", "0.0.0.0"),  
+    "host": os.getenv("PPLX_HOST", "0.0.0.0"),  # nosec B104
     "port": int(os.getenv("PPLX_PORT", "8000")),
     "api_token": os.getenv("PPLX_API_TOKEN", "sk-123456"),
     "admin_token": os.getenv("PPLX_ADMIN_TOKEN", ""),
