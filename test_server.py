@@ -11,7 +11,7 @@ import os
 BASE_URL = os.getenv("PPLX_HOST_URL", "http://localhost:8000")
 # 从环境变量获取 Token，避免硬编码泄露
 API_TOKEN = os.getenv("PPLX_API_TOKEN", "sk-123456") 
-#ADMIN_TOKEN = os.getenv("PPLX_ADMIN_TOKEN", "admin-secret-token")
+
 
 
 def print_result(name: str, response: requests.Response):
@@ -113,17 +113,17 @@ def main():
     
     try:
         # 基础测试
-        #results.append(("健康检查", test_health()))
-        #results.append(("号池状态", test_pool_status()))
-        #results.append(("无Token访问", test_search_without_token()))
-        #results.append(("列出客户端", test_pool_list()))
+        results.append(("健康检查", test_health()))
+        results.append(("号池状态", test_pool_status()))
+        results.append(("无Token访问", test_search_without_token()))
+        results.append(("列出客户端", test_pool_list()))
         
-        # 可选：搜索测试（需要有效的 Token 配置）
-        # print("\n是否测试实际搜索功能? (需要有效的 Perplexity Token)")
-        # user_input = input("输入 y 继续，其他键跳过: ").strip().lower()
-        # if user_input == 'y':
-        #     results.append(("搜索功能", test_search()))
-        test_search()
+        可选：搜索测试（需要有效的 Token 配置）
+        print("\n是否测试实际搜索功能? (需要有效的 Perplexity Token)")
+        user_input = input("输入 y 继续，其他键跳过: ").strip().lower()
+        if user_input == 'y':
+            results.append(("搜索功能", test_search()))
+
         
     except requests.exceptions.ConnectionError:
         print("\n❌ 无法连接到服务器，请确保服务已启动:")

@@ -64,7 +64,8 @@ class ClientWrapper:
             "request_count": self.request_count,
             "next_available_at": (
                 datetime.fromtimestamp(self.available_after, tz=timezone.utc).isoformat()
-                if not self.is_available() else None
+                if not self.is_available()
+                else None
             ),
         }
 
@@ -106,10 +107,13 @@ class ClientPool:
         csrf = os.getenv("PPLX_CSRF_TOKEN")
         session = os.getenv("PPLX_SESSION_TOKEN")
         if csrf and session:
-            self._add_client_internal("default", {
-                "next-auth.csrf-token": csrf,
-                "__Secure-next-auth.session-token": session,
-            })
+            self._add_client_internal(
+                "default",
+                {
+                    "next-auth.csrf-token": csrf,
+                    "__Secure-next-auth.session-token": session,
+                },
+            )
             self._mode = "single"
             return
 
@@ -143,7 +147,8 @@ class ClientPool:
                 return None, None
 
             available = [
-                self.clients[cid] for cid in self._rotation_order
+                self.clients[cid]
+                for cid in self._rotation_order
                 if self.clients[cid].is_available()
             ]
 

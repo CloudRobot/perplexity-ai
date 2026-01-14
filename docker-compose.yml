@@ -2,32 +2,19 @@ version: "3.8"
 
 services:
   perplexity-proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: perplexity-proxy:latest
-    container_name: perplexity-proxy
+    # 替换为你的 GitHub 镜像地址
+    image: ghcr.io/cloudrobot/perplexity-ai:latest
+    container_name: perplexity-api
     restart: unless-stopped
-    
     ports:
-      - "${PPLX_PORT:-8000}:8000"
-    
-    env_file:
-      - .env
-    
+      - "15001:8000"
+    environment:
+      - PPLX_API_TOKEN=${PPLX_API_TOKEN}
+      - PPLX_ADMIN_TOKEN=${PPLX_ADMIN_TOKEN}
+      # SOCKS 代理配置 (可选)，如果是在perplexity不可用的地区是必选
+      # 格式: socks5://[user[:pass]@]host[:port][#remark]
+      # - HTTPS_PROXY=${SOCKS_PROXY:-}
+      # - HTTP_PROXY=${SOCKS_PROXY:-}
     volumes:
-      # 挂载 Token 池配置文件
+      # 挂载配置文件 ,配置文件需要和docker-compose.yml放在同一目录下或者修改配置文件的绝对路径
       - ./token_pool_config.json:/app/token_pool_config.json:ro
-    
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"

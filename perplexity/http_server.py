@@ -120,16 +120,18 @@ async def verify_admin_token(x_admin_token: str = Header(None)):
 # ==================== 请求/响应模型 ====================
 class SearchRequest(BaseModel):
     """Search request model."""
+
     query: str
     mode: str = "auto"
     model: Optional[str] = None
     sources: List[str] = ["web"]
-    language: str = "en-US",
+    language: str = ("en-US",)
     incognito: bool = True
 
 
 class ClientRequest(BaseModel):
     """Client management request model."""
+
     id: str
     csrf_token: Optional[str] = None
     session_token: Optional[str] = None
@@ -148,7 +150,7 @@ async def health_check():
             "total": status["total"],
             "available": status["available"],
             "mode": status["mode"],
-        }
+        },
     }
 
 
@@ -162,7 +164,7 @@ async def pool_status():
 async def search(request: SearchRequest):
     """
     执行搜索查询（需要 API Token）
-    
+
     使用负载均衡从池中选择可用客户端
     """
     pool = get_pool()
@@ -175,7 +177,7 @@ async def search(request: SearchRequest):
             detail={
                 "message": "No available clients",
                 "pool_status": status,
-            }
+            },
         )
 
     try:
@@ -189,7 +191,7 @@ async def search(request: SearchRequest):
             incognito=request.incognito,
         )
         pool.mark_success(client_id)
-        
+
         # # 保存响应到 JSON 文件以便分析
         # responses_dir = os.path.join(os.path.dirname(__file__), "..", "responses")
         # os.makedirs(responses_dir, exist_ok=True)
@@ -198,10 +200,10 @@ async def search(request: SearchRequest):
         # with open(filename, "w", encoding="utf-8") as f:
         #     json.dump(response, f, ensure_ascii=False, indent=2)
         # print(f"Response saved to: {filename}")
-        
+
         # 使用 _extract_clean_result 提取答案和来源链接
         clean_result = _extract_clean_result(response)
-        
+
         return {
             "status": "ok",
             "client_id": client_id,
@@ -255,6 +257,7 @@ async def reset_client(request: ClientRequest):
 def main():
     """Run the HTTP server."""
     import uvicorn
+
     print(f"Starting Perplexity API Proxy on {CONFIG['host']}:{CONFIG['port']}")
     uvicorn.run(app, host=CONFIG["host"], port=CONFIG["port"])
 
