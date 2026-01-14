@@ -3,24 +3,23 @@ FastAPI-based HTTP server for Perplexity API with load balancing.
 Provides RESTful endpoints for search and pool management.
 """
 
-import json
 import os
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Header, Depends
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
-# 加载 .env 文件
+# 加载 .env 文件（必须在导入 client_pool 前执行，以便环境变量生效）
 load_dotenv()
 
-from .client_pool import ClientPool
+from fastapi import Depends, FastAPI, Header, HTTPException  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+
+from .client_pool import ClientPool  # noqa: E402
 
 # ==================== 配置 ====================
 CONFIG = {
-    "host": os.getenv("PPLX_HOST", "0.0.0.0"),
+    "host": os.getenv("PPLX_HOST", "127.0.0.1"),  # nosec B104
     "port": int(os.getenv("PPLX_PORT", "8000")),
     "api_token": os.getenv("PPLX_API_TOKEN", "sk-123456"),
     "admin_token": os.getenv("PPLX_ADMIN_TOKEN", ""),
@@ -125,7 +124,7 @@ class SearchRequest(BaseModel):
     mode: str = "auto"
     model: Optional[str] = None
     sources: List[str] = ["web"]
-    language: str = ("en-US",)
+    language: str = "en-US"
     incognito: bool = True
 
 
@@ -190,6 +189,7 @@ async def search(request: SearchRequest):
             stream=False,
             incognito=request.incognito,
         )
+        assert client_id is not None  # client_id must be set if client is not None
         pool.mark_success(client_id)
 
         # # 保存响应到 JSON 文件以便分析
@@ -211,6 +211,7 @@ async def search(request: SearchRequest):
             "web_results": clean_result["sources"],
         }
     except Exception as e:
+        assert client_id is not None
         pool.mark_failure(client_id)
         raise HTTPException(status_code=500, detail=str(e))
 
