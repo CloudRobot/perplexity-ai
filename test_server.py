@@ -10,8 +10,7 @@ import os
 # ==================== 配置 ====================
 BASE_URL = os.getenv("PPLX_HOST_URL", "http://localhost:8000")
 # 从环境变量获取 Token，避免硬编码泄露
-API_TOKEN = os.getenv("PPLX_API_TOKEN", "sk-123456") 
-
+API_TOKEN = os.getenv("PPLX_API_TOKEN", "sk-123") 
 
 
 def print_result(name: str, response: requests.Response):
@@ -101,6 +100,47 @@ def test_pool_list():
     return resp.ok
 
 
+def test_generate_image():
+    """测试图片生成端点"""
+    print("\n" + "="*50)
+    print("6. 测试图片生成 /generate-image")
+    print("="*50)
+    
+    headers = {"Authorization": f"Bearer {API_TOKEN}"}
+    data = {
+        "prompt": "赛博朋克风格的上海夜景，霓虹灯反射在雨后的地面，16:9 横图。",
+        "mode": "reasoning",
+        "model": "claude-4.5-sonnet-thinking",
+        "language": "zh-CN"
+    }
+    
+    resp = requests.post(f"{BASE_URL}/generate-image", json=data, headers=headers)
+    
+    # 专门处理图片生成的输出
+    status = "✅" if resp.ok else "❌"
+    print(f"\n{status} [{resp.status_code}] Generate Image")
+    try:
+        result = resp.json()
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+        
+        if result.get("images"):
+            print(f"\n生成了 {len(result['images'])} 张图片:")
+            for i, img in enumerate(result["images"]):
+                print(f"  [{i+1}] URL: {img.get('url', 'N/A')}")
+                print(f"      尺寸: {img.get('width')}x{img.get('height')}")
+        else:
+            print("\n⚠️ 未生成图片")
+            
+        if result.get("prompt_used"):
+            print(f"\n使用的 Prompt: {result['prompt_used'][:100]}...")
+    except Exception as e:
+        print(f"Error parsing response: {e}")
+        print(resp.text[:200])
+    
+    return resp.ok
+
+
+
 def main():
     """运行所有测试"""
     print("\n" + "="*60)
@@ -118,11 +158,17 @@ def main():
         results.append(("无Token访问", test_search_without_token()))
         results.append(("列出客户端", test_pool_list()))
         
-        可选：搜索测试（需要有效的 Token 配置）
+        # 可选：搜索测试（需要有效的 Token 配置）
         print("\n是否测试实际搜索功能? (需要有效的 Perplexity Token)")
         user_input = input("输入 y 继续，其他键跳过: ").strip().lower()
         if user_input == 'y':
             results.append(("搜索功能", test_search()))
+        
+        # 可选：图片生成测试
+        print("\n是否测试图片生成功能?")
+        user_input = input("输入 y 继续，其他键跳过: ").strip().lower()
+        if user_input == 'y':
+            results.append(("图片生成", test_generate_image()))
 
         
     except requests.exceptions.ConnectionError:

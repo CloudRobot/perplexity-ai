@@ -100,6 +100,58 @@ def _extract_clean_result(response: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
+def _extract_image_result(response: Dict[str, Any]) -> Dict[str, Any]:
+    """Extract generated images from the response."""
+    images = []
+    prompt_used = ""
+    caption = ""
+    model = ""
+
+    # 备用：从 media_items 提取
+    if "media_items" in response:
+        for item in response.get("media_items", []):
+            if item.get("medium") == "image":
+                images.append(
+                    {
+                        "url": item.get("image"),
+                        "thumbnail_url": item.get("thumbnail"),
+                        "width": item.get("image_width"),
+                        "height": item.get("image_height"),
+                    }
+                )
+                caption = item.get("name", "")
+                meta = item.get("generated_media_metadata", {})
+                if not prompt_used:
+                    prompt_used = meta.get("prompt", "")
+                if not model:
+                    model = meta.get("model_str", "")
+
+    if not images and "text" in response and isinstance(response["text"], list):
+        for step in response["text"]:
+            if step.get("step_type") == "GENERATE_IMAGE":
+                content = step.get("content", {})
+                prompt_used = content.get("prompt", "")
+                caption = content.get("caption", "")
+
+            elif step.get("step_type") == "GENERATE_IMAGE_RESULTS":
+                content = step.get("content", {})
+                for img in content.get("image_results", []):
+                    images.append(
+                        {
+                            "url": img.get("url"),
+                            "thumbnail_url": img.get("thumbnail_url"),
+                            "width": img.get("image_width"),
+                            "height": img.get("image_height"),
+                        }
+                    )
+    return {
+        "images": images,
+        "prompt_used": prompt_used,
+        "caption": caption,
+        "model": model,
+    }
+
+
 # ==================== 认证依赖 ====================
 async def verify_api_token(authorization: str = Header(None)):
     """Verify API token from Authorization header."""
@@ -134,6 +186,16 @@ class ClientRequest(BaseModel):
     id: str
     csrf_token: Optional[str] = None
     session_token: Optional[str] = None
+
+
+class ImageGenerateRequest(BaseModel):
+    """Image generation request model."""
+
+    prompt: str
+    mode: str = "reasoning"  # 使用 reasoning 模式触发图片生成
+    model: Optional[str] = "claude-4.5-sonnet-thinking"
+    language: str = "en-US"
+    incognito: bool = True
 
 
 # ==================== API 端点 ====================
@@ -181,7 +243,7 @@ async def search(request: SearchRequest):
 
     try:
         response = client.search(
-            query=request.query,
+            query="帮我生成一幅图片:" + request.query,
             mode=request.mode,
             model=request.model,
             sources=request.sources,
@@ -209,6 +271,55 @@ async def search(request: SearchRequest):
             "client_id": client_id,
             "answer": clean_result["answer"],
             "web_results": clean_result["sources"],
+        }
+    except Exception as e:
+        assert client_id is not None
+        pool.mark_failure(client_id)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/generate-image", dependencies=[Depends(verify_api_token)])
+async def generate_image(request: ImageGenerateRequest):
+    """
+    生成图片（需要 API Token）
+
+    通过 Perplexity 的 reasoning 模式触发图片生成
+    """
+    pool = get_pool()
+    client_id, client = pool.get_client()
+
+    if client is None:
+        status = pool.get_status()
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "No available clients",
+                "pool_status": status,
+            },
+        )
+
+    try:
+        response = client.search(
+            query=request.prompt,
+            mode=request.mode,
+            model=request.model,
+            sources=["web"],
+            language=request.language,
+            stream=False,
+            incognito=request.incognito,
+        )
+        assert client_id is not None
+        pool.mark_success(client_id)
+
+        result = _extract_image_result(response)
+
+        return {
+            "status": "ok",
+            "client_id": client_id,
+            "images": result["images"],
+            "prompt_used": result["prompt_used"],
+            "caption": result["caption"],
+            "model": result["model"],
         }
     except Exception as e:
         assert client_id is not None
