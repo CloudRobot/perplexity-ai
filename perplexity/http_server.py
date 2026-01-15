@@ -192,8 +192,8 @@ class ImageGenerateRequest(BaseModel):
     """Image generation request model."""
 
     prompt: str
-    mode: str = "reasoning"  # 使用 reasoning 模式触发图片生成
-    model: Optional[str] = "claude-4.5-sonnet-thinking"
+    mode: str = "auto"  # 使用 reasoning 模式触发图片生成
+    model: Optional[str] = None
     language: str = "en-US"
     incognito: bool = True
 
